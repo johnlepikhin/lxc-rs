@@ -354,7 +354,7 @@ impl Container {
         trace!("get_config_item() requested key '{}'", key);
         let size = call!(self.get_config_item(to_cstr(key), null_mut(), 0));
         trace!("get_config_item() got size {}", size);
-        if size < 0 {
+        if size <= 0 {
             return None;
         }
         let mut retv = vec![0; size as usize];
