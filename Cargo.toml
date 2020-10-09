@@ -12,6 +12,7 @@ edition = "2018"
 
 [dependencies]
 bitflags = "1.0"
+log = "0.4"
 
 [dependencies.lxc-sys]
 version = "0.2"
