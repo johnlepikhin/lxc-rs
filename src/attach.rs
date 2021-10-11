@@ -4,6 +4,8 @@ pub use lxc_sys::lxc_attach_exec_t as ExecFn;
 /** LXC attach options for lxc::Container::attach(). */
 pub use lxc_sys::lxc_attach_options_t as Options;
 
+pub use lxc_sys::lxc_groups_t as Groups;
+
 bitflags::bitflags! {
     /** LXC environment policy. */
     pub struct EnvPolicy: i32 {
