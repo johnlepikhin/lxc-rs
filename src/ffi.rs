@@ -48,3 +48,24 @@ pub fn vec_from_nta(raw: *mut *mut i8) -> Vec<*mut i8> {
 
     vec
 }
+
+pub fn release_nta(raw: *mut *mut i8) {
+    if raw.is_null() {
+        return;
+    }
+
+    for x in 0.. {
+        let ptr = unsafe { *raw.offset(x) };
+        if ptr.is_null() {
+            break;
+        }
+
+        lxc_release(ptr);
+    }
+
+    lxc_release(raw as _);
+}
+
+pub fn lxc_release(raw: *mut i8) {
+    unsafe { lxc_sys::free(raw as _) }
+}

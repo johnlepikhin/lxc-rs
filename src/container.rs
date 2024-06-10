@@ -35,6 +35,7 @@ macro_rules! call {
                 })
                 .collect();
 
+            super::ffi::release_nta(result);
             Ok(vec)
         }
     }};
@@ -51,6 +52,16 @@ macro_rules! call {
         };
 
         super::ffi::to_string(result)
+    }};
+
+    ( $container:ident . $method:ident( $( $arg:expr ),* ) -> c_str_free ) => {{
+        let result = unsafe {
+            (*$container.inner).$method.unwrap()($container.inner, $($arg,)*)
+        };
+
+        let str = super::ffi::to_string(result);
+        super::ffi::lxc_release(result);
+        str
     }};
 
     ( $container:ident . $method:ident( $( $arg:expr ),* ) -> bool ) => {{
@@ -207,7 +218,7 @@ impl Container {
             argv.push(null_mut());
 
             let r = call!(self.start(use_init as i32, argv.as_mut_ptr()) -> bool);
-            let _ = argv.iter().map(|e| release(*e));
+            argv.iter().for_each(|e| release(*e));
             r
         }
     }
@@ -238,7 +249,7 @@ impl Container {
      * Return current config file name.
      */
     pub fn config_file_name(&self) -> String {
-        call!(self.config_file_name() -> c_str)
+        call!(self.config_file_name() -> c_str_free)
     }
 
     /**
@@ -316,7 +327,7 @@ impl Container {
         );
         release(c_template);
         release(c_bdevtype);
-        let _ = argv.iter().map(|e| release(*e));
+        argv.iter().for_each(|e| release(*e));
         r
     }
 
@@ -368,6 +379,7 @@ impl Container {
         let c_key = to_cstr(key);
         let size = call!(self.get_config_item(c_key, null_mut(), 0));
         if size <= 0 {
+            release(c_key);
             return None;
         }
         let mut retv = vec![0; size as usize];
@@ -383,7 +395,7 @@ impl Container {
      */
     pub fn get_running_config_item(&self, key: &str) -> String {
         let c_key = to_cstr(key);
-        let r = call!(self.get_running_config_item(c_key) -> c_str);
+        let r = call!(self.get_running_config_item(c_key) -> c_str_free);
         release(c_key);
         r
     }
@@ -563,7 +575,7 @@ impl Container {
         let c_program = to_cstr(program);
         let pid =
             call!(self.attach_run_wait(options, c_program, argv.as_ptr() as *const *const i8));
-        let _ = argv.iter().map(|e| release(*e));
+        argv.iter().for_each(|e| release(*e));
         release(c_program);
 
         if pid == -1 {
@@ -634,8 +646,10 @@ impl Container {
      */
     pub fn add_device_node(&self, src_path: &str, dest_path: Option<&str>) -> super::Result<()> {
         let c_src_path = to_cstr(src_path);
-        let r = call!(self.add_device_node(c_src_path, to_nullable_cstr(dest_path)) -> bool);
+        let c_dest_path = to_nullable_cstr(dest_path);
+        let r = call!(self.add_device_node(c_src_path, c_dest_path) -> bool);
         release(c_src_path);
+        release(c_dest_path);
         r
     }
 
@@ -644,8 +658,10 @@ impl Container {
      */
     pub fn remove_device_node(&self, src_path: &str, dest_path: Option<&str>) -> super::Result<()> {
         let c_src_path = to_cstr(src_path);
-        let r = call!(self.remove_device_node(c_src_path, to_nullable_cstr(dest_path)) -> bool);
+        let c_dest_path = to_nullable_cstr(dest_path);
+        let r = call!(self.remove_device_node(c_src_path, c_dest_path) -> bool);
         release(c_src_path);
+        release(c_dest_path);
         r
     }
 
