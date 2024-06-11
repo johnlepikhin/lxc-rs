@@ -13,9 +13,7 @@ pub fn to_nullable_cstr(s: Option<&str>) -> *mut c_char {
 }
 
 pub fn release(p: *mut c_char) {
-    if p.is_null() {
-        std::mem::forget(p);
-    } else {
+    if !p.is_null() {
         unsafe {
             let _ = std::ffi::CString::from_raw(p);
         }
