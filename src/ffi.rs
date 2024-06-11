@@ -69,3 +69,78 @@ pub fn release_nta(raw: *mut *mut i8) {
 pub fn lxc_release(raw: *mut i8) {
     unsafe { lxc_sys::free(raw as _) }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{release, to_cstr, to_nullable_cstr, to_string};
+
+    #[test]
+    fn null_test() {
+        use super::{lxc_release, release_nta, vec_from_nta};
+        use std::ptr::{null, null_mut};
+
+        release(null_mut());
+        release_nta(null_mut());
+        lxc_release(null_mut());
+
+        assert!(to_string(null()).is_empty());
+        assert!(vec_from_nta(null_mut()).is_empty());
+    }
+
+    #[test]
+    fn cstr_test() {
+        let cstr = to_cstr("");
+        assert!(!cstr.is_null());
+        assert_eq!(unsafe { *cstr }, 0);
+        release(cstr);
+
+        let cstr = to_cstr("x");
+        assert!(!cstr.is_null());
+        assert_eq!(unsafe { *cstr }, b'x' as _);
+        assert_eq!(unsafe { *cstr.offset(1) }, 0);
+        release(cstr);
+
+        let cstr = to_nullable_cstr(None);
+        assert!(cstr.is_null());
+        release(cstr);
+
+        let cstr = to_nullable_cstr(Some(""));
+        assert!(!cstr.is_null());
+        assert_eq!(unsafe { *cstr }, 0);
+        release(cstr);
+
+        let cstr = to_nullable_cstr(Some("y"));
+        assert!(!cstr.is_null());
+        assert_eq!(unsafe { *cstr }, b'y' as _);
+        assert_eq!(unsafe { *cstr.offset(1) }, 0);
+        release(cstr);
+    }
+
+    #[test]
+    fn string_test() {
+        let cstr = to_cstr("");
+        let string = to_string(cstr);
+        assert!(string.is_empty());
+        release(cstr);
+
+        let cstr = to_cstr("hello");
+        let string = to_string(cstr);
+        assert_eq!(string, "hello");
+        release(cstr);
+
+        let cstr = to_nullable_cstr(None);
+        let string = to_string(cstr);
+        assert!(string.is_empty());
+        release(cstr);
+
+        let cstr = to_nullable_cstr(Some(""));
+        let string = to_string(cstr);
+        assert!(string.is_empty());
+        release(cstr);
+
+        let cstr = to_nullable_cstr(Some("world"));
+        let string = to_string(cstr);
+        assert_eq!(string, "world");
+        release(cstr);
+    }
+}
