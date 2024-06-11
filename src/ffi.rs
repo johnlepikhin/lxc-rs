@@ -21,6 +21,10 @@ pub fn release(p: *mut c_char) {
 }
 
 pub fn to_string(s: *const c_char) -> String {
+    if s.is_null() {
+        return String::new();
+    }
+
     let buffer = unsafe { std::ffi::CStr::from_ptr(s) };
 
     buffer.to_str().unwrap().to_string()
@@ -28,6 +32,9 @@ pub fn to_string(s: *const c_char) -> String {
 
 pub fn vec_from_nta(raw: *mut *mut i8) -> Vec<*mut i8> {
     let mut vec = Vec::new();
+    if raw.is_null() {
+        return vec;
+    }
 
     for x in 0.. {
         unsafe {

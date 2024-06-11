@@ -8,14 +8,7 @@ macro_rules! get {
 
     ( $container:ident . $prop:ident -> c_str ) => {{
         let result = get!($container.$prop);
-
-        let str = if result.is_null() {
-            ""
-        } else {
-            unsafe { std::ffi::CStr::from_ptr(result).to_str().unwrap() }
-        };
-
-        str.to_string()
+        super::ffi::to_string(result)
     }};
 }
 
@@ -57,13 +50,7 @@ macro_rules! call {
             (*$container.inner).$method.unwrap()($container.inner, $($arg,)*)
         };
 
-        let str = unsafe {
-            std::ffi::CStr::from_ptr(result)
-        };
-
-        str.to_str()
-            .unwrap()
-            .to_string()
+        super::ffi::to_string(result)
     }};
 
     ( $container:ident . $method:ident( $( $arg:expr ),* ) -> bool ) => {{
